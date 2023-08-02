@@ -1,0 +1,29 @@
+Lab1
+
+How many gates does your one-bit multiplexer use? The 5-bit multiplexer? Write down a formula for the number of gates in an N-bit multiplexer. (2 Points)
+
+4,20,4N
+
+Assume a single full adder requires 5 gates. How many gates does the 8-bit ripple-carry adder require? How many gates does the 8-bit carry-select adder require? (2 Points)
+
+40,60
+
+Assume a single full adder requires A time unit to compute its outputs once all its inputs are valid and a mux requires M time unit to compute its output. In terms of A and M, how long does the 8-bit ripple-carry adder take? How long does the 8-bit carry-select adder take? (2 Points)
+
+8A,4A+M
+
+Optional: How long did you take to work on this lab?
+
+3H
+
+
+Lab1：多路复用器和加法器，主要是对组合逻辑的实现和语法的熟悉，ppt中没看到桶形移位器
+      参考了https://nju-projectn.github.io/dlco-lecture-note/exp/06.html
+      包含function,多态,module,Bit
+
+事实上,直接使用以下三类运算符就可以实现Lab1中的组合逻辑
+ + operator
+(condition ? ifTrue : ifFalse).
+ >> or << operators.
+
+Vector类型的数据结构
