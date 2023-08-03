@@ -1,0 +1,61 @@
+Discussion Question 1 (5 points): What registers are read from and written to in each of the interface methods? Remember that register reads performed in guards count.
+
+    method Bool notFull;
+    method Bool notEmpty;
+
+Discussion Question 2 (5 Points): Fill out the conflict matrix for mkMyConflictFifo. For simplicity, treat writes to the same register as conflicting (not just conflicting within a single rule).
+
+            enq notFull	first	deq	notEmpty	clear
+enq         C	<       CF      C   <           C
+notFull	    >	CF	    CF	    >	CF	        >
+first	    CF	CF	    CF	    >	CF	        >
+deq	        C	<	    <	    C	<	        C
+notEmpty    >	CF	    CF	    >	CF	        >
+clear	    C	<	    <	    C	<	        C
+
+Discussion Question 3 (5 Points): Using your conflict matrix for mkMyConflictFifo, which conflicts do not match the conflict-free FIFO scheduling constraints shown above?
+
+            enq notFull	first	deq	notEmpty	clear
+enq         C   <       CF      CF  <           <
+notFull	    >   CF      CF      >   CF          <
+first	    CF  CF      CF      >   CF          <
+deq	        CF  <       <       C   <           <
+notEmpty    >   CF      CF      >   CF          <
+clear	    >   >       >       >   >           C
+
+Discussion Question 4 (5 Points): In your design of the clear() method, how did you force the scheduling constraint {enq, deq} < clear?
+
+canonicalize所用的notFullP、notEmptyP、enqP、deqP为低优先级，clear的为高优先级
+
+Discussion Question 5 (Optional): How long did you take to work on this lab?
+
+4H
+
+
+Lab4：
+基于Guard的设计理念
+
+冲突矩阵的考虑
+
+EHR寄存器的特点
+
+标号大的端口 优先级大于 标号小的端口
+
+读前者时，如果后者同时在写入，则直接bypass新数据；否则就直接读寄存器内容，在pipelineFIFO和bypassFIFO中用到
+写前者时，永远能够覆盖后者的写，即优先级高
+
+使用方法：先根据所需的功能人为定义好各功能的优先级，然后根据其行为读写不同的端口
+
+CFFifo分析
+
+在原本的两元素FIFO中，在FIFO不空不满（有一个元素时），同时进行enq和deq，就会让后写入的数据放在db的位置，因此加上了一条canonicalize规则。如果只有一个元素，但数据在db的位置，要将其挪到da
+但这样是需要一个周期来挪的（dead cycle），在这个周期是不能进行deq或enq的。
+
+使用EHR寄存器后，就完全不会出现数据只在db的情况了
+在FIFO不空不满（有一个元素时），同时进行enq和deq，由于canonicalize规则会优先读端口的情况，同时进行enq和deq会激发此规则，那么就会将当前写入db的数据直接写到da（因为db正在被写，所以读db写入da时就是bypass），va还是vaild，vb则是false，enq虽然写了db，但vb被高优先级写入了false，va也是高优先级写入了True。然后此时first读出的da，则是本应读出的da，没有错位，因为下个周期新的da才能被写入。
+
+mkMyCFFifo
+本身实现的思路和是一致的，只是在实现时用了req_enq和req_deq来表明写请求和读请求，如果在激活canonicalize规则的同时发起了enq或deq或两者一起，那么就要
+
+
+从握手打拍的角度理解此处FIFO的设计

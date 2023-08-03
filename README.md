@@ -1,7 +1,3 @@
-git add path
-git commit -m "logs"
-git push -u origin main
-
 6.175
 
 课程讲义和实验都在此：
