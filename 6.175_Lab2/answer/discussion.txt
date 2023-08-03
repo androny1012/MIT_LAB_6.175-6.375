@@ -1,0 +1,148 @@
+Lab2
+
+Discussion Question 1:
+
+What is the source of the performance gap between your two elastic implementations (when it is using the class fifo and when it is using your own fifo)? (2 Points)
+
+inelastic
+my own fifo 261 cycles
+class fifo  193 cycles
+
+elastic
+
+my own fifo 264 cycles
+class fifo  259 cycles
+
+Discussion Question 2:
+
+Assume you are given a black box module that performs a 10-stage algorithm. You can not look at its internal implementation, but you can test this module by giving it data and looking at the output of the module. You have been told that it is implemented as one of the structures covered in this lab, but you do not know which one. How can you tell if it is inelastic or if it is elastic? (2 Points)
+
+……应该能，差一个周期
+
+Discussion Question 3 (Optional): How long did you take to work on this lab?
+
+4H
+
+Lab2：首先是实现一个FIFO
+
+先从组合的FFT理解基4 FFT的运算过程
+
+然后理解非弹性FIFO和弹性FIFO的区别
+
+分别用自己的FIFO和提供的FIFOF进行对比
+
+——————————————————————————————————————————————————————————————
+
+一开始没有在意每个样例的运行周期数目，这样就对实际的性能没有了解
+
+首先分析TB的运行机制，使用Randomizable可以生成随机数，用以生成FftPoints数目的vector
+
+一开始init=False，初始化随机数组，然后开始送数
+
+rule feed 在每个周期都生产一组FFT输入数据，总共产生128个周期，然后同时给组合逻辑的FFT和待测FFT送数据
+（cmplx为库函数？）
+
+在rule stream中，只有fft_comb和fft同时有输出数据才能deq，然后比较数据是否一致
+如果输出数目达到128个，且每个输出都一样，说明结果正确（前提，组合逻辑的FFT结果正确）
+
+makefile添加combinational，combinational fft结果可见为130个周期，因为输入输出FIFO各用一个周期，因此比128要多两周期，参数化TESTNUM，改为1，结果就是3个周期
+
+inelastic fft，使用官方库的FIFO，结果为194周期
+虽然是刚性流水线，但没有反压，为什么不是128+2+2个周期？
+TESTNUM:  1，cycle:  5
+
+第1个周期inFifo拿到数据   
+第2个周期inFifo不空，sReg1计算赋值
+第3个周期sReg1有效，sReg2计算赋值
+第4个周期sReg2有效，计算结果输出到outFifo
+第5个周期outFifo拿到数据输出
+
+TESTNUM:  2，cycle:  6
+TESTNUM:  3，cycle:  7
+TESTNUM:  4，cycle:  8
+
+1:inFifo get 1   
+2:inFifo get 2 sReg1 cal 1
+3:inFifo get 3 sReg1 cal 2 sReg1有效 sReg2计算赋值1 
+4:inFifo get 4 sReg1 cal 3 sReg1有效 sReg2计算赋值2 sReg2有效 outFifo enq 1
+5:             sReg1 cal 4 sReg1有效 sReg2计算赋值3 sReg2有效 outFifo enq 2 outFifo deq 1
+6:                         sReg1有效 sReg2计算赋值4 sReg2有效 outFifo enq 3 outFifo deq 2
+7:                                                 sReg2有效 outFifo enq 4 outFifo deq 3
+8:                                                                         outFifo deq 4
+
+TESTNUM:  5，cycle: 11
+
+因为中间过程 inFifo 满了，所以没有enq？
+为什么会满呢?明明fifo一有数据就deq
+mkFIFOF不冲突，能同时enq和deq的
+
+那这样换成mkLFIFOF/mkPipelineFifo是不是就好了？
+
+事实上换成mkBypassFIFOF后才变为预期中的7个周期
+这个FIFO实现的是空时也能同时enq/deq
+
+也就是说原来产生的问题是，inFifo工作工作着突然空了？
+
+TESTNUM: 16，cycle: 26
+
+
+## inelastic fft own FIFO
+
+TESTNUM:  1，cycle:  5
+
+第1个周期inFifo拿到数据   
+第2个周期inFifo不空，sReg1计算赋值
+第3个周期sReg1有效，sReg2计算赋值
+第4个周期sReg2有效，计算结果输出到outFifo
+第5个周期outFifo拿到数据输出
+
+TESTNUM:  2，cycle:  8
+
+因为自己写是三元素FIFO不能同时enq和deq，所以要等enq完才能deq，所以会多两个周期
+
+
+经分析发现，是tb中同时调用的fft_comb和fft产生的冲突，两者互相影响导致fft的行为无法符合预期
+
+解决方案：
+    增大fft_comb中inFifo和outFifo的容量 或者 将两者的enq行为分别放到两个rule当中
+
+下面给出更准确的结果
+
+fft_comb                        : 130 cycles
+fft_inelastic(mkMyConflictFifo) : 264 cycles
+fft_inelastic(mkMyPipelineFifo) : 133 cycles
+fft_inelastic(mkMyBypassFifo)   : 131 cycles
+fft_inelastic(mkMyCFFifo)       : 133 cycles
+
+fft_comb结果可见为130个周期，因为输入输出FIFO各用一个周期，因此比128要多两周期
+而对于mkMyPipelineFifo/mkMyCFFifo，还要多三个周期则是三级流水线需要三个周期
+mkMyBypassFifo的结果最好，是因为少了输入输出FIFO的两个周期，FIFO在空时就可以bypass数据
+
+而mkMyConflictFifo因为无法实现同时enq和deq，因此多了约一倍的周期数
+
+class fifo?
+fft_inelastic(mkFIFOF)          : 133 cycles
+fft_inelastic(mkSizedFIFOF(10)) : 133 cycles
+fft_inelastic(mkLFIFOF)         : 133 cycles
+fft_inelastic(mkBypassFIFOF)    : 131 cycles
+
+________________________________________________________________
+fft_elastic(mkMyConflictFifo) : 265 cycles
+fft_elastic(mkMyPipelineFifo) : 132 cycles
+fft_elastic(mkMyBypassFifo)   : 130 cycles
+fft_elastic(mkMyCFFifo)       : 132 cycles
+
+class fifo? tb deq慢了，官方FIFO深度为1或2
+fft_elastic(mkFIFOF)          : 260 cycles ?
+fft_elastic(mkSizedFIFOF(10)) : 268 cycles ?
+fft_elastic(mkSizedFIFOF(100)): 298 cycles ?
+fft_elastic(mkLFIFOF)         : 132 cycles (the same as mkMyPipelineFifo)
+fft_elastic(mkBypassFIFOF)    : 192 cycles ?
+
+将fft_comb的fifo改为深度为3的mkMyBypassFifo…… 又是冲突
+
+fft_elastic(mkFIFOF)          : cycles
+fft_elastic(mkSizedFIFOF(10)) : cycles
+fft_elastic(mkSizedFIFOF(100)): cycles
+fft_elastic(mkLFIFOF)         : cycles
+fft_elastic(mkBypassFIFOF)    : cycles
