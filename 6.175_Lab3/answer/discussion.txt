@@ -1,0 +1,79 @@
+Lab3
+
+Discussion Question 1 (1 Point): Hardware-wise, unsigned addition is the same as signed addition when using two's complement encoding. Using evidence from the test bench, is unsigned multiplication the same as signed multiplication?
+
+有符号乘法跟无符号乘法的区别就在这，无符号乘法不需要考虑符号位扩展问题，而有符号乘法在累加部分积的时候需要做符号位扩展，并且还要考虑符号位参与乘法时的含义不同
+
+Exercise 2 (3 Points): Fill in the code for multiply_by_adding so it calculates the product of a and b using repeated addition in a single clock cycle. (You will verify the correctness of your multiplier in Exercise 3.) If you need an adder to produce an (n+1)-bit output from two n-bit operands, follow the model of multiply_unsigned and multiply_signed and extend the operands to (n+1)-bit before adding.
+
+把mkTbDumb改成这样后就编译错误，原因是在function实现时使用了多态，但在例化时却没有指定相应的位宽等
+只用例化一个是因为两个输入function的尺寸一致，可以自动推断
+(* synthesize *)
+module mkTbDumb();
+    Empty tb <- mkTbMulFunction(multiply_unsigned, multiply_unsigned, True);
+    return tb;
+endmodule
+
+Discussion Question 3 (1 Point): Is your implementation of multiply_by_adding a signed multiplier or an unsigned multiplier? (Note: if it does not match either multiply_signed or multiply_unsigned, it is wrong).
+
+unsigned
+
+Discussion Question 4:
+
+Current Bit	Previous Bit	Booth Encoding
+0	    0	                0
+0	    1	                +
+1	    0	                -
+1	    1	                0
+
+Current Bits	Previous Bit	Original Booth Encoding	Radix-4 Booth Encoding
+00	            0		        00                      00
+00	            1		        0+                      0+
+01	            0	            +-	                    0+
+01	            1		        +0                      +0
+10	            0		        -0                      -0
+10	            1		        -+                      0-
+11	            0		        0-                      0-
+11	            1		        00                      00
+
+Current Bits	Previous Bit	Original Booth Encoding	Radix-8 Booth Encoding
+000	            0		        000                      000
+000	            1		        00+                      00+
+001	            0	            0+-	                     00+
+001	            1		        0+0                      0+0
+010	            0		        +-0                      0+0
+010	            1		        +-+                      0++
+011	            0		        +0-                      0++
+011	            1		        +00                      +00
+100	            0		        -00                      -00
+100	            1		        -0+                      0--
+101	            0	            -+-	                     0--
+101	            1		        -+0                      0-0
+110	            0		        0-0                      0-0
+110	            1		        0-+                      00-
+111	            0		        00-                      00-
+111	            1		        000                      000
+
+Discussion Question 5 (1 Point): Now consider extending your Booth multiplier even further to a radix-8 Booth multiplier. This would be like doing 3 steps of the radix-2 Booth multiplier in a single step. Can all radix-8 Booth encodings be represented with only one non-zero symbol like the radix-4 Booth multiplier? Do you think it would still make sense to make a radix-8 Booth multiplier?
+
+wil use two non-zero symbol
+但还是有意义的，时间和面积的trade off
+
+Discussion Question 6 (Optional): How long did you take to work on this lab?
+
+4H
+
+
+Lab3：关于乘法器的实现和验证
+
+首先提供了有符号和无符号乘法的基准电路（直接用*实现） multiply_unsigned multiply_signed，这个的实现都是用function，即组合逻辑
+
+然后提供了TestBenchTemplates作为验证的模板，mkTbMulFunction可对两个function进行结果对比，mkTbMulModule可对模块和function进行结果对比
+
+TestBench中的mkTbDumb就是一个使用样例
+
+注意Tb给出的结果分有符号和无符号，根据你进行验证的乘法器看相应的结果
+
+mkTbMulFunction验证的两个function都是组合逻辑
+
+mkTbMulModule需要实现时序模块，并给出相应的ready信号
