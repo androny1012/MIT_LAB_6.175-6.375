@@ -1,0 +1,138 @@
+Discussion Question 1 (5 Points): What is the IPC for the two-stage pipelined processor for each benchmark tested by the run_bmarks.sh script?
+
+    two-stage pipelined
+    median   : 0.789
+    multiply : 0.774
+    qsort    : 0.846
+    towers   : 0.956
+    vvadd    : 0.890
+
+Discussion Question 2 (5 Points): What is the formula to compute the next address predictor accuracy from the IPC? (Hint, how many cycles does it take to execute an instruction when the PC+4 prediction is correct? What about when it is incorrect?) Using this formula, what is the accuracy of the PC+4 next address predictor for each benchmark?
+
+    prediction is correct   : IPC = 1
+    prediction is incorrect : IPC = 0.5
+
+    ser prediction correct rate = x
+    IPC = x + (1 - x) * 0.5 = 0.5 + 0.5x
+
+    median    : 57.8%
+    multiply  : 54.8%
+    qsort     : 69.2%
+    towers    : 91.2%
+    vvadd     : 78.0%
+
+Discussion Question 3 (5 Points): What is the IPC for the two-stage pipelined processor with a BTB for each benchmark tested by the run_bmarks.sh script? How much has it improved over the previous version?
+
+    two-stage pipelined with a BTB
+    median   : 0.868
+    multiply : 0.973
+    qsort    : 0.885
+    towers   : 0.987
+    vvadd    : 0.999
+
+Discussion Question 4 (5 Points): How does adding the BTB change the performance of the bpred_* microbenchmarks? (Hint: the number of cycles for bpred_j should go down.)
+
+without BTB
+    -- assembly test: bpred_bht --
+    1210
+    1010
+    PASSED
+    -- assembly test: bpred_j --
+    3506
+    1806
+    PASSED
+    -- assembly test: bpred_ras --
+    413
+    286
+    PASSED
+    -- assembly test: cache --
+    45
+    44
+    PASSED
+
+
+with BTB
+    -- assembly test: bpred_bht --
+    1311
+    1010
+    PASSED
+    -- assembly test: bpred_j --
+    1825
+    1806
+    PASSED
+    -- assembly test: bpred_ras --
+    361
+    286
+    PASSED
+    -- assembly test: cache --
+    45
+    44
+    PASSED
+
+Discussion Question 5 (Optional): How long did it take you to complete this lab?
+
+    40H(30H for env, 10H for ex)
+
+Discussion Question 6 (5 Bonus Points): Look at the assembly source for the bpred_* benchmarks and explain why each benchmark improved, stayed the same, or got worse.
+
+
+BTB branch target buffer
+实现的是类似cache的功能
+根据当前PC预测下一个PC,只要当前PC跳转的地址部署PC+4,就会记录在buffer中,下次碰到就预测这个地址
+因此这个预测方式适合循环的跳转,或者jump到固定地址的指令
+
+bpred_bht (worse)
+里面的跳转大多是b指令,跳转的地址并非固定,有时候跳有时候不跳,因此结果可能会更差
+
+bpred_j   (improved)
+指令基本是直接跳转到固定的地址,只要BTB记录过一次就能记住,效果非常好
+
+bpred_ras (improved)
+ret指令是返回,因为每个f中都有两个jal,因此ret指令会有两次,这部分可以通过BTB优化性能
+
+Discussion Question 7 (5 Bonus Points): How would you improve the BTB to improve the results of bpred_bht?
+
+因为不知道beq/bne 这些指令要不要跳,所以如果能预测b指令到底跳不跳,就可以优化这部分的mispredict
+
+
+
+6.175_Lab5
+
+
+bluesim文件夹为每次完成CPU的BSV设计后编译得到的仿真模拟器
+logs为仿真过程中的调试结果
+programs为仿真测试所需的汇编代码
+src为BSV设计文件
+log为测试结果简要，会输出每个样例通过与否
+main.cpp Connectal相关的仿真程序
+Makefile Connectal编译
+mem.vmh 临时的输入测试指令
+
+run_asm.sh 测试所有指令
+run_bmarks.sh benchmark测试
+
+搞了三天终于搞定环境
+
+首先Connectal环境是必须的，用于编译仿真器，因此需要学会使用docker，我使用的镜像来源于https://github.com/kazutoiris/MIT6.175
+进入docker环境后，把代码拷进去，进入6.175_Lab5
+
+make build.bluesim VPROC=ONECYCLE
+
+编译得到bluesim文件夹，内含有可执行的模拟器，ONECYCLE为样例，每次写好新的CPU就要重新make一次
+
+得到可执行的模拟器后
+运行
+./run_asm.sh > /dev/null 2>&1
+
+如果无权限则 chmod 777 filename
+
+在log和logs文件夹中会有相应的输出结果
+
+最后整理了一个自认为较为优雅的脚本docker_compile.sh，详见docker_run.md
+
+
+RFile.bsv √
+# 接口是写一个端口，两个读端口
+# Bypass的实现，读端口优先级高，可以读到正在往里写的数，方便处理Hazard
+
+在用BSV的时候，很多实现用了库/用了更加结构化的方式编写，这样感觉对资源的掌控并没有比verilog更加清楚，能达到非常好的PPA吗？

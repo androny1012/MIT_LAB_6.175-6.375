@@ -1,0 +1,31 @@
+Benchmarks Test
+-- benchmark test: median --
+Benchmark median
+Cycles = 4139
+Insts  = 4140
+Return 0
+PASSED
+-- benchmark test: multiply --
+Benchmark multiply
+Cycles = 20892
+Insts  = 20893
+Return 0
+PASSED
+-- benchmark test: qsort --
+Benchmark qsort
+Cycles = 123495
+Insts  = 123496
+Return 0
+PASSED
+-- benchmark test: towers --
+Benchmark tower
+Cycles = 4842
+Insts  = 4843
+Return 0
+PASSED
+-- benchmark test: vvadd --
+Benchmark vvadd
+Cycles = 2407
+Insts  = 2408
+Return 0
+PASSED
