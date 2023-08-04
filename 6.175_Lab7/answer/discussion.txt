@@ -1,0 +1,106 @@
+Discussion Question 1 (5 Points): Record the results for ./run_bmarks.sh withoutcache. What IPC do you see for each benchmark?
+
+six-stage withoutcache(DDR 10 cycle read delay)
+    median   : 0.087
+    multiply : 0.113
+    qsort    : 0.115
+    towers   : 0.115
+    vvadd    : 0.125
+
+Discussion Question 2 (5 Points): Record the results for ./run_bmarks.sh withcache. What IPC do you see for each benchmark?
+
+six-stage withcache(ROW = 8, group = 1)(DDR 10 cycle read delay)
+    median   : 0.408(best)
+    multiply : 0.481(best)
+    qsort    : 0.400
+    towers   : 0.182
+    vvadd    : 0.454(best)
+
+    -- assembly test: cache --
+    191
+    43
+    PASSED
+
+
+six-stage withcachegroup(ROW = 8, group = 2)(DDR 10 cycle read delay)
+    median   : 0.408(best)
+    multiply : 0.466
+    qsort    : 0.353
+    towers   : 0.294
+    vvadd    : 0.454(best)
+
+    -- assembly test: cache --
+    149
+    43
+    PASSED
+
+six-stage withcachegroup(ROW = 8, group = 4)(DDR 10 cycle read delay)
+    median   : 0.304
+    multiply : 0.453
+    qsort    : 0.299
+    towers   : 0.268
+    vvadd    : 0.183
+
+    -- assembly test: cache --
+    149
+    43
+    PASSED
+
+six-stage withcache(ROW = 32, group = 1)(DDR 10 cycle read delay)
+    median   : 0.408(best)
+    multiply : 0.481(best)
+    qsort    : 0.429(best)
+    towers   : 0.191
+    vvadd    : 0.454(best)
+
+    -- assembly test: cache --
+    191
+    43
+    PASSED
+
+six-stage withcache(ROW = 32, group = 4)(DDR 10 cycle read delay)
+    median   : 0.408(best)
+    multiply : 0.481(best)
+    qsort    : 0.410
+    towers   : 0.469(best)
+    vvadd    : 0.454(best)
+
+    -- assembly test: cache --
+    149
+    43
+    PASSED
+
+Discussion Question 3 (Optional): How long did it take you to complete this lab?
+
+    8H
+
+
+6.175_Lab7
+很怀疑之前的人是怎么跑通的(他们应该用的应该是直接读取二进制文件实现的指令输入，这个后面在project中跑通了)
+
+按照ddr的读取逻辑，读取一行是512bit，读取一行后按照地址的偏移取512bit中的32bit指令
+因此我的思路是重新做一个512bit的vmh文件用于读取
+
+按照网上分享的代码，感觉都没有按照这个思路去实现
+
+具体看programs/build中的文件
+
+
+对于C语言程序，自行编译的结果包含16bit的指令，这在我们写的程序中无法识别，因此benchmark中的程序还没办法自行编译……是因为用错的编译命令，不能用带压缩指令的
+
+./configure --prefix=/opt/riscv --with-arch=rv32i_zicsr --with-abi=ilp32
+
+Cache代码不多，挺容易理解
+https://ysyx.oscc.cc/docs/2205/advanced/2.7.html#%E7%9B%B4%E6%8E%A5%E6%98%A0%E5%B0%84%E7%BC%93%E5%AD%98%E7%9A%84%E4%BC%98%E7%BC%BA%E7%82%B9
+
+样例中实现了直接映射
+试试实现组相联
+
+从结果来看，当然是cache line越多越好
+然后对于Group的数目，不一定越多越好
+
+为什么会出现group数目增加，性能反而下降的情况呢？
+
+理论上，组相连缓存对性能的提升最差情况下也和直接映射缓存一样，在大部分情况下组相连缓存效果比直接映射缓存好
+
+可能是实现错了
