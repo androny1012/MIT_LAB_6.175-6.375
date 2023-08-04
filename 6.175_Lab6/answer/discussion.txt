@@ -1,0 +1,346 @@
+Discussion Question 1 (10 Points): Debugging practice!
+
+If you replace the BTB with a simple pc + 4 address prediction, the processor still works, but it does not perform as well. 
+
+If you replace it with a really bad predictor that predicts pc is the next instruction for each pc, it should still work but have even worse performance because each instruction would require redirection (unless the instruction loops back to itself). 
+
+If you actually set the prediction to pc, you will get errors in the assembly tests; the first one will be from cache.riscv.vmh.
+
+What is the error you get?
+
+    Cycle          7 ----------------------------------------------------
+    Fetch: PC = 0000020c, inst = 0030a023, expanded = sw [r 1 0x0] = r 3
+    Execute finds misprediction: PC = 0000020c
+    Fetch: Mispredict, redirected by Execute
+
+    Cycle          8 ----------------------------------------------------
+    Fetch: PC = 00004000, inst = aaaaaaaa, expanded = unsupport 0xaaaaaaaa
+    Execute: Kill instruction
+
+What is happening in the processor to cause that to happen?
+
+    if mispredict, nextPc一定是eInst.addr吗
+
+    eInst.addr = (dInst.iType == Ld || dInst.iType == St) ? aluRes : brAddr;
+
+    这里的addr进行了复用，同时作为访存的地址和PC跳转的地址，因为正常来说，这两个是不会同时用到的，但因为预测NEXTPC == PC，这对于SW和LW指令来说一定会错，因此会用addr进行跳转。
+
+Why do not you get this error with PC+4 and BTB predictors?
+
+    因为对于sw和lw指令，这两种默认预测下一条是PC+4，这个对于这两条指令一定是正确的，所以这两种情况不会出错
+
+How would you fix it?
+
+    if(eInst.mispredict) begin
+		$display("Execute finds misprediction: PC = %x", f2e.pc);
+		exeRedirect[0] <= Valid (ExeRedirect {
+			pc: f2e.pc,
+			nextPc: (eInst.iType == Br || eInst.iType == J || eInst.iType == Jr) ? eInst.addr : f2e.pc + 4
+		});
+	end
+	else begin
+		$display("Execute: PC = %x", f2e.pc);
+	end
+
+    只有B和J指令才在mispredict后用eInst.addr跳转
+
+    这样可能会浪费BTB的空间，所以最好不要在这里更新BTB
+    
+You do not actually have to fix this bug, just answer the questions. (Hint: look at the addr field of ExecInst structure.)
+
+
+Discussion Question 2 (5 Points): What evidence do you have that all pipeline stages can fire in the same cycle?
+
+Cycle         25 ----------------------------------------------------
+[fetch    ] PC = 0000024c
+[decode   ] PC = 00000244, expanded = bne r 4 r 3 0x68
+[register ] PC = 00000230
+[execute  ] PC = 0000022c
+[memory   ] PC = 00000228
+[writeback] PC = 00000224
+
+Discussion Question 3 (5 Points): In your six-stage pipelined processor, how many cycles does it take to correct a mispredicted instruction?
+
+3
+
+Discussion Question 4 (5 Points): If an instruction depends on the result of the instruction immediately before it in the pipeline, how many cycles is that instruction stalled?
+
+1 or 2 or 3
+
+Discussion Question 5 (5 Points): What IPC do you get for each benchmark?
+
+    six-stage pipelined
+    median   : 0.303
+    multiply : 0.542
+    qsort    : 0.295
+    towers   : 0.729
+    vvadd    : 0.662
+
+    减少 mispredicted 能提升一些
+    但更多问题在于寄存器的依赖，被迫stall
+
+Discussion Question 6 (10 Points):
+
+    Where will the BHT be positioned in the pipeline?
+    What pipeline stage performs lookups into the BHT?
+
+        必须在Decode阶段及之后，因为得知道是不是B/J指令
+        BHT需要根据每次的跳转情况进行记录，因此BHT的update应该的exe阶段
+        In fact, pc can be redirected as soon as we have a "better" prediction.
+
+    In which pipeline stage will the BHT prediction be used?
+
+        decode阶段就能用上，如果下条指令不跳转，就可以开始重定向了
+
+    Will the BHT prediction need to be passed between pipeline stages?
+
+        需要的，因为还是要到exe级才能判断是不是真的预测对了
+
+    How to redirect PC using BHT prediction?
+    Do you need to add a new epoch?
+    How to handle the redirect messages?
+
+        需要新的epoch，因为是在decode阶段就要重定向
+
+    Do you need to change anything to the current instruction and its data structures if redirecting?
+
+        需要的，因为fetch阶段每个周期都会预测，所以需要清除掉上一次的fetch结果
+
+    How will you train the BHT?
+    Which stage produces training data for the BHT?
+    Which stage will use the interface method to train the BHT?
+    How to send training data?
+    For which instructions will you train the BHT?
+
+        在B和JAL指令时，把当前PC和taken送入BHT中
+        taken在EXE阶段产生，所以需要在EXE阶段update
+
+    How will you know if your BHT works?
+    Discussion Question 7 (5 Points): How much improvement do you see in the bpred_bht.riscv.vmh test over the processor in SixStage.bsv?
+
+
+    -- assembly test: bpred_bht --
+    5979
+    1007
+    PASSED
+    
+improved
+    -- assembly test: bpred_bht --
+    3174
+    1007
+    PASSED
+
+    Discussion Question 8 (5 Points): How much improvement do you see in the bpred_j.riscv.vmh and bpred_j_noloop.riscv.vmh tests over the processor in SixStage.bsv?
+
+    -- assembly test: bpred_j --
+    2224
+    1803
+    PASSED
+    -- assembly test: bpred_j_noloop --
+    235
+    34
+    PASSED
+
+improved
+    -- assembly test: bpred_j --
+    2170
+    1803
+    PASSED
+    -- assembly test: bpred_j_noloop --
+    141
+    34
+    PASSED
+
+    Discussion Question 9 (5 Points): What IPC do you get for each benchmark? How much improvement is this over the original six-stage pipeline?
+
+    six-stage pipelined 
+    median   : 0.303
+    multiply : 0.542
+    qsort    : 0.295
+    towers   : 0.729
+    vvadd    : 0.662
+
+    six-stage BHT pipelined
+    median   : 0.477
+    multiply : 0.580
+    qsort    : 0.434
+    towers   : 0.726
+    vvadd    : 0.662
+
+    Exercise 5/6
+
+BHT
+    -- assembly test: bpred_ras --
+    1277
+    283
+    PASSED
+
+Bonus
+    -- assembly test: bpred_ras --
+    840
+    283
+    PASSED
+
+RAS
+    -- assembly test: bpred_ras --
+    840
+    283
+    PASSED
+
+    结果发现：提前算JALR地址和使用RAS实现的加快JALR指令的效果是一致的
+
+    Discussion Question 10 (Optional): How long did it take you to complete this lab?
+
+    17H
+
+
+6.175_Lab6
+注意多了一个测试集bpred_j_noloop
+非循环的跳转对于BTB来说非常不友好，每次都预测错误
+
+TWOSTAGE 课程给了一个示例，存在一个DataHazard的问题，当出现问题时会stall流水线
+因此和Lab5中的TWOSTAGEBTB性能相比下降
+
+其中的Scoreboard和exeEpoch处理需要结合ppt
+
+2stage:
+exeEpoch初始为0，当mispredict时，会在下周期反转，下周起exe看到exeEpoch和上一个stage传来的exeEpoch相反，说明上一条指令执行时发现了mispredict，传来的指令无效，不用执行
+
+Scoreboard本质就是三口可search的FIFO(SFIFO)
+
+用于记录当前的指令将要的写入的dInst.dst(隐式条件:valid),不管结果如何只要到了执行阶段就要remove sb中是数据
+
+cononicalizeRedirect是用来处理冲突问题的rule
+
+如果这一个exe阶段发现的mispredict，则在下一个exe不执行，这对于2stage是合适的
+
+6stage:
+
+需要分析每个stage可能会出现的hazard，并决定处理hazard的stage
+
+Fetch       根据pc取值、根据pc预测predPc
+            纯组合，不需要管其他stage，需要传pc和predPc直到exe级才能判断是否mispredict
+
+Decode      解码后就能知道当前的指令需要读的寄存器和写的寄存器
+            需要把当前写寄存器送入sb
+            
+Regfile     单纯的读寄存器
+            这里可能会出现data hazard?
+            这个阶段读的寄存器，在下个周期就要使用，但可能下个或下下个周期才被写入之前应当写入的值
+Execute
+Memory
+Writeback
+
+data hazard1 : 需要stall 3个周期
+
+I1 R2 <- R2 + R3
+I2 R4 <- R1 + R2
+
+      t0    t1    t2    t3    t4    t5    t6    t7    t8    t9    t10
+F     F     F     
+D           D     D     
+R                 R(2,3)R(1,2)
+E                       E     E    
+M                             M     M     
+W                                   W(R2) W(R4)
+
+data hazard2 : 需要stall 2个周期
+
+I1 R4 <- R2 + R3
+I2 R2 <- R1 + R3
+I2 R2 <- R4 + R5
+
+      t0    t1    t2    t3    t4    t5    t6    t7    t8    t9    t10
+F     F     F     F     
+D           D     D     D     
+R                 R(2,3)R(1,3)R(4,5)
+E                       E     E     E    
+M                             M     M     M     
+W                                   W(R4) W(R2) W(R2)
+
+data hazard3 : 需要stall 1个周期
+
+I1 R4 <- R2 + R3
+I2 R2 <- R1 + R3
+I2 R2 <- R1 + R3
+I2 R2 <- R4 + R5
+
+      t0    t1    t2    t3    t4    t5    t6    t7    t8    t9    t10
+F     F     F     F     F     
+D           D     D     D     D     
+R                 R(2,3)R(1,3)R(1,3)R(4,5)
+E                       E     E     E     E    
+M                             M     M     M     M     
+W                                   W(R4) W(R2) W(R2) W(R2)
+
+在R阶段读寄存器时，需要insert dst，可以search 两个src,就要stall到写入了目标寄存器后才能go on
+
+更好的处理是bypass/forward,数据前递
+
+上述是寄存器之前的data hazard，如果再考虑存储时的data hazard
+就包括sw和lw指令，sw正常来说就是把alu算出来的东西存进地址，下次如果读mem中的数据时仍然的mem stage，因此不会有data hazard，原因是lw和sw都在同一个stage
+
+但是mem和寄存器的交互就会出问题，lw指令是把存储的数据写到寄存器，同样存在上述的三种data hazard，但这个的处理就没办法forward的？除非提前访存
+
+因此，目前的处理办法是只要寄存器还没写完，就一直在sb中，只有sb中的寄存器写完了，remove才能推进R 读寄存器的stage
+
+用stall解决了data hazard后，还要考虑control hazard，也就是mispredict
+
+I1 JUMP
+I2 111
+
+括号中为epoch
+
+      t0    t1    t2    t3    t4    t5    t6    t7    t8    t9    t10
+F     F(0)  F(0)  F(0)  F(0)  F(1)  F(1)
+D           D(0)  D(0)  D(0)  D(0)  D(1)  D(1)
+R                 R(0)  R(0)  R(0)  R(0)  R(1)  R(1)
+E                       E(MIS)E(0)  E(0)  E(0)  E(1)  
+M                             M     M     
+W                                   W     W
+
+F阶段预测的pc，到E阶段才能发现是否mispredict，如果mispredict，就不用往下推了
+在下个周期重定向pc
+
+            是否跳转    跳转地址
+JAL指令     Decode      Decode 
+JALR指令    Decode      RegFetch 需要预测吗？
+B           Exec        Decode
+
+https://zhuanlan.zhihu.com/p/490749315
+
+改变处理器的状态才算执行了指令，PC/REG/MEM，也就是EXE级之后
+
+BTB是在解码之前就能确定预测的地址，因为直接根据当前PC查表预测PPC
+因此适合上述三种跳转
+
+BHT一定比BTB好吗？不是好不好的问题，而是做的事情不一样
+
+BTB只是记录了待预测PC的上一次跳转情况，但还需要更加细致的预测
+BHT能够预测这次的B/J指令是否需要跳转(因此需要Decode时才能知道是不是B/J)，如果跳转，那就用上(BHT的地址×，用的是PC+imm)，否则PC+4
+也就是说，两个并不是互斥的关系，BHT是BTB的补充
+
+Br和J其实都不需要BTB给的地址，因为他们的跳转地址就是pc+imm
+那到底谁需要这个……，jalr并不适合BTB
+
+只是BTB能够更快的预测出，用来给fetch下个周期取指
+
+假如没有BHT，只有BTB，那么每次需要到EXE才能知道是不是预测错了，有三个周期的气泡
+如果有了BHT，那么但BTB和BHT预测结果有出入时，应当以准确率高的BHT为准，这样会产生一个周期的气泡，就算后面BHT也预测错了，那么就是总共四个周期的气泡
+
+因此还需要对实际的效果进行评估
+
+
+A small problem
+Consider the entry in BTB for a branch at the 
+end of a loop
+◼ Execute will delete it on loop exit
+◼ This will cause a misprediction when the loop is 
+executed again!
+◼ Decode will redirect again after consulting BHT! 
+How to prevent Execute from deleting the entry?
+
+
+RAS
+
+PUSH和POP不会产生冲突

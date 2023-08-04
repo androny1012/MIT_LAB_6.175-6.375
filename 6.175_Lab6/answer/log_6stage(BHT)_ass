@@ -1,0 +1,145 @@
+Assembly Test
+-- assembly test: simple --
+104
+100
+PASSED
+-- assembly test: add --
+1045
+424
+PASSED
+-- assembly test: addi --
+538
+201
+PASSED
+-- assembly test: and --
+1382
+444
+PASSED
+-- assembly test: andi --
+490
+157
+PASSED
+-- assembly test: auipc --
+49
+17
+PASSED
+-- assembly test: beq --
+745
+250
+PASSED
+-- assembly test: bge --
+846
+268
+PASSED
+-- assembly test: bgeu --
+1005
+293
+PASSED
+-- assembly test: blt --
+747
+250
+PASSED
+-- assembly test: bltu --
+897
+275
+PASSED
+-- assembly test: bne --
+762
+250
+PASSED
+-- assembly test: j --
+38
+10
+PASSED
+-- assembly test: jal --
+68
+15
+PASSED
+-- assembly test: jalr --
+313
+74
+PASSED
+-- assembly test: lw --
+709
+226
+PASSED
+-- assembly test: lui --
+53
+24
+PASSED
+-- assembly test: or --
+1382
+447
+PASSED
+-- assembly test: ori --
+521
+164
+PASSED
+-- assembly test: sw --
+1301
+449
+PASSED
+-- assembly test: sll --
+1103
+459
+PASSED
+-- assembly test: slli --
+534
+200
+PASSED
+-- assembly test: slt --
+1021
+418
+PASSED
+-- assembly test: slti --
+518
+196
+PASSED
+-- assembly test: sra --
+1151
+471
+PASSED
+-- assembly test: srai --
+603
+215
+PASSED
+-- assembly test: srl --
+1230
+479
+PASSED
+-- assembly test: srli --
+588
+212
+PASSED
+-- assembly test: sub --
+1009
+416
+PASSED
+-- assembly test: xor --
+1390
+446
+PASSED
+-- assembly test: xori --
+529
+166
+PASSED
+-- assembly test: bpred_bht --
+3174
+1007
+PASSED
+-- assembly test: bpred_j --
+2170
+1803
+PASSED
+-- assembly test: bpred_ras --
+1277
+283
+PASSED
+-- assembly test: bpred_j_noloop --
+141
+34
+PASSED
+-- assembly test: cache --
+87
+41
+PASSED
