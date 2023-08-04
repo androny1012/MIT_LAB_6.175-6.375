@@ -1,0 +1,18 @@
+Discussion Question 1 (10 Points): In the spirit of the upcoming Thanksgiving holiday, list some reasons you are thankful you only have to do this lab on a one-cycle processor. To get you started: what new hazards would exceptions introduce if you were working on a pipelined implementation?
+
+    ^_^
+    NoPermission 直接中断
+    Unsupported/ECall 需要先完成后面的指令，要改PC的话前面几级要STALL
+    ERet 相当于跳转指令
+
+Discussion Question 2 (Optional): How long did it take for you to finish this lab?
+
+    3H
+
+
+6.175_Lab8
+      因为是基于单周期的异常处理，比较简单，根据spec读写寄存器和更改PC即可，主要是理解异常和中断的概念
+
+理解如何进入不同的模式
+如何实现系统调用
+需要将mul_inst编译出mul指令，然后decode发现不支持，然后发生系统调用
