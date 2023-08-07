@@ -9,3 +9,4 @@
 *.pcm
 *.so
 *.exe
+/*/audio/connectal/bluesim

@@ -1,0 +1,30 @@
+5 Discussion Questions
+
+1. Report the number of Total LUTs, FFs, and DSP48 used and their percentage in your entire design (mkPcieTop) after making the pitch factor dynamic. Report the Total LUTs, FFs, and DSP48 used and their percentage by each of the AudioPipeline, FIR, FFT, ToMP, PitchAdjust, FromMP, and IFFT modules.
+
+……
+
+2. Report the length of the critical path of your audio pipeline. Can you tell where in the design your critical path is?
+
+……
+
+3. Did you run into any problems using the FPGA?
+
+……
+
+4. What advantages are there to using subinterfaces in an interface instead of just using methods?
+
+可以提高抽象层级，让不同层次的methods放在不同的接口
+
+5. If you try to synthesize the audio pipeline with a 32 point FFT, you’ll see it doesn’t fit on the FPGA. Ideally we could use a 1024 point FFT and still maintain the target rate of processing 44100 samples per second. Using the circular pipeline for the FFT, it would take 10 cycles to calculate the FFT of 1024 samples. At 50 Mhz this means the FFT supports a throughput of 1024/10 ∗ 50, 000, 000 = 5, 120, 000, 000 samples per second, which is much greater than the 16 ∗ 44100 = 705600 samples per second our application requires the FFT to support assuming we have an overlap of N/S = 16. Also, with a 1024 point FFT, the input vector is whopping 1024 ∗ (2 ∗ (2 ∗ 16)) = 65536 bits wide. Given our design of the FFT has a much higher throughput than we need and an excessively large input width, how could we change our implementation of the FFT to both fit on the FPGA using 1024 points and still meet our required sample rate? Would the rest of the audio pipeline have to change to support this as well?
+
+在50M时钟下，能够处理的点数大于应用所需的点数，因此可以减少每次输入的数据量以减小位宽，同时让吞吐量和实际输入数据量匹配，当FIFO中凑够1024个才开始算，而不是每次用1024个数据位宽接收数据
+
+6.375_Lab4
+
+    (* synthesize *)
+    可综合模块的实现，多态的模块不能直接综合，需要先例化
+
+    给接口添加嵌套接口
+
+    与connectal连接

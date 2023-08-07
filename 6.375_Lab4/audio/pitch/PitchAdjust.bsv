@@ -28,10 +28,10 @@ endinterface
 //
 // factor - the amount to adjust the pitch.
 //  1.0 makes no change. 2.0 goes up an octave, 0.5 goes down an octave, etc...
-module mkPitchAdjust(Integer s, SettablePitchAdjust#(nbins, isize, fsize, psize) ifc)
+module mkPitchAdjust(Integer s, FixedPoint#(isize, fsize) factor_init, SettablePitchAdjust#(nbins, isize, fsize, psize) ifc)
     provisos(Add#(a__, psize, TAdd#(isize, isize)), Add#(psize, b__, isize), Add#(c__, TLog#(nbins), isize), Add#(TAdd#(TLog#(nbins), 1), d__, isize));
 
-    Reg#(FixedPoint#(isize, fsize)) factor <- mkReg(unpack(2));
+    Reg#(FixedPoint#(isize, fsize)) factor <- mkReg(factor_init);
 
     // complex double* in, complex double* out
     Reg#(Vector#(nbins, ComplexMP#(isize, fsize, psize))) in <- mkReg(unpack(0));

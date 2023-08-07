@@ -6,6 +6,9 @@
 #include "MyDutRequest.h"
 #include "MyDutIndication.h"
 
+#include <cmath>
+#include <iostream>
+
 static MyDutRequestProxy *device = 0;
 
 size_t putcount = 0;
@@ -107,6 +110,16 @@ void run_test_bench(){
 
 int main (int argc, const char **argv)
 {
+
+    double pf = 2.0; // holding pitch factor
+
+    std::cout << "Enter a factor: " << std::endl;
+    std::cin >> pf;
+    uint16_t m_i = (uint16_t)floor(pf);
+    uint16_t m_f = (uint16_t)((pf - m_i) * (1 << 16));
+    // 32-bit unsigned integer that can be used by software
+    uint32_t factorPkt = (uint32_t)(m_i << 16) | m_f;
+
     // Service Indication messages from HW - Register the call-back functions to a indication thread
     MyDutIndication myIndication (IfcNames_MyDutIndicationH2S);
 
@@ -115,6 +128,9 @@ int main (int argc, const char **argv)
 
     // Invoke reset_dut method of HW request ifc (Soft-reset)
     device->reset_dut();
+
+    // setFactor
+    device->setFactor(factorPkt);
 
     // Run the testbench: send in.cpm
     run_test_bench();

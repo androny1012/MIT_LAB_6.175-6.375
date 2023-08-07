@@ -21,16 +21,32 @@ typedef 2 S;
 typedef 2 FACTOR;
 typedef 16 P_SIZE;
 
+(* synthesize *)
 module mkAudioPipeline(SettableAudioProcessor#(I_SIZE, F_SIZE));
-    AudioProcessor fir <- mkFIRFilter(c);
-    Chunker#(S, Sample) chunker <- mkChunker();
+    // AudioProcessor fir <- mkFIRFilter(c);
+    // Chunker#(S, Sample) chunker <- mkChunker();
+    // OverSampler#(S, N, Sample) overSampler <- mkOverSampler(replicate(0));
+    // FFT#(N,FixedPoint#(I_SIZE, P_SIZE)) fft <- mkFFT();
+    // FFT#(N,FixedPoint#(I_SIZE, P_SIZE)) fft <- mkAudioPipelineFFT();
+    // ToMP#(N, I_SIZE, F_SIZE, P_SIZE) toMP <- mkToMP();
+    // SettablePitchAdjust#(N, I_SIZE, F_SIZE, P_SIZE) settablePitchAdjust <- mkPitchAdjust(valueOf(S));
+    // PitchAdjust#(N, I_SIZE, F_SIZE, P_SIZE) pitchAdjust = settablePitchAdjust.pitchAdjust;
+    // FromMP#(N, I_SIZE, F_SIZE, P_SIZE) fromMP <- mkFromMP();
+    // FFT#(N,FixedPoint#(I_SIZE, P_SIZE)) ifft <- mkIFFT();
+    // Overlayer#(N, S, Sample) overlayer <- mkOverlayer(replicate(0));
+    // Splitter#(S, Sample) splitter <- mkSplitter();
+
+    AudioProcessor fir <- mkAudioPipelineFIR();
+    Chunker#(S, Sample) chunker <- mkAudioPipelineChunker();
     OverSampler#(S, N, Sample) overSampler <- mkOverSampler(replicate(0));
-    FFT#(N,FixedPoint#(I_SIZE, P_SIZE)) fft <- mkFFT();
-    ToMP#(N, I_SIZE, F_SIZE, P_SIZE) toMP <- mkToMP();
-    SettablePitchAdjust#(N, I_SIZE, F_SIZE, P_SIZE) settablePitchAdjust <- mkPitchAdjust(valueOf(S));
+    FFT#(N,FixedPoint#(I_SIZE, P_SIZE)) fft <- mkAudioPipelineFFT();
+    ToMP#(N, I_SIZE, F_SIZE, P_SIZE) toMP <- mkAudioPipelineToMP();
+
+    SettablePitchAdjust#(N, I_SIZE, F_SIZE, P_SIZE) settablePitchAdjust <- mkAudioPipelinePitchAdjust();
     PitchAdjust#(N, I_SIZE, F_SIZE, P_SIZE) pitchAdjust = settablePitchAdjust.pitchAdjust;
-    FromMP#(N, I_SIZE, F_SIZE, P_SIZE) fromMP <- mkFromMP();
-    FFT#(N,FixedPoint#(I_SIZE, P_SIZE)) ifft <- mkIFFT();
+
+    FromMP#(N, I_SIZE, F_SIZE, P_SIZE) fromMP <- mkAudioPipelineFromMP();
+    FFT#(N,FixedPoint#(I_SIZE, P_SIZE)) ifft <- mkAudioPipelineIFFT();
     Overlayer#(N, S, Sample) overlayer <- mkOverlayer(replicate(0));
     Splitter#(S, Sample) splitter <- mkSplitter();
 
@@ -115,3 +131,47 @@ module mkAudioPipeline(SettableAudioProcessor#(I_SIZE, F_SIZE));
     endinterface
 
 endmodule
+
+(* synthesize *)
+module mkAudioPipelineIFFT(FFT#(N, FixedPoint#(I_SIZE, P_SIZE)));
+    FFT#(N, FixedPoint#(I_SIZE, P_SIZE)) ifft <- mkIFFT();
+    return ifft;
+endmodule
+
+(* synthesize *)
+module mkAudioPipelineFIR(AudioProcessor);
+    AudioProcessor fir <- mkFIRFilter(c);
+    return fir;
+endmodule
+
+(* synthesize *)
+module mkAudioPipelineChunker(Chunker#(S, Sample));
+    Chunker#(S, Sample) chunker <- mkChunker();
+    return chunker;
+endmodule
+
+(* synthesize *)
+module mkAudioPipelineFFT(FFT#(N, FixedPoint#(I_SIZE, P_SIZE)));
+    FFT#(N, FixedPoint#(I_SIZE, P_SIZE)) fft <- mkFFT();
+    return fft;
+endmodule
+
+(* synthesize *)
+module mkAudioPipelineToMP(ToMP#(N, I_SIZE, F_SIZE, P_SIZE));
+    ToMP#(N, I_SIZE, F_SIZE, P_SIZE) toMP <- mkToMP();
+    return toMP;
+endmodule
+
+(* synthesize *)
+module mkAudioPipelinePitchAdjust(SettablePitchAdjust#(N, I_SIZE, F_SIZE, P_SIZE));
+    FixedPoint#(isize, fsize) factor = fromInteger(valueOf(FACTOR));
+    SettablePitchAdjust#(N, I_SIZE, F_SIZE, P_SIZE) settablePitchAdjust <- mkPitchAdjust(valueOf(S), factor);
+    return settablePitchAdjust;
+endmodule
+
+(* synthesize *)
+module mkAudioPipelineFromMP(FromMP#(N, I_SIZE, F_SIZE, P_SIZE));
+    FromMP#(N, I_SIZE, F_SIZE, P_SIZE) fromMP <- mkFromMP();
+    return fromMP;
+endmodule
+
