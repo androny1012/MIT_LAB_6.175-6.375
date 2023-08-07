@@ -1,0 +1,45 @@
+1. In Problems 1-3, you have analyzed the areas and the critical-path delays of different Bluespec FFT designs using synth. How does the area and critical-path delay of the mkFFT module change for combinational, linear and circular designs? Please explain to your observation. 
+
+area:
+    linear > combinational > circular designs
+critical-path delay
+    combinational > linear ≈ circular designs
+
+Which design(s) would give you the highest throughput if all FFT designs were running at the same clock frequency?
+
+linear pipeline
+
+2. Answer the three questions given in Problem 5 where we implemented polymorphic FIR filters.
+
+modify FilterCoefficients.bsv
+
+3. Before you made your FFT implementations polymorphic, the number of points and data type was specified with global typedefs. 
+What are the advantages of making the interface and modules polymorphic instead of just using typedefs? 
+
+使用typedefs需要单独修改某个宏定义，而polymorphic在使用是直接建立相应类型的变量再调用模块即可
+
+使用多态时用到provisos，将派生要求进行计算和限制，以防用户在进行调用时不符合电路
+
+多态中可以使用valueOf() 伪函数，比如在对多态的 Vector#(len, td) 操作时（len是Vector长度，是数值类型），要写一个循环来遍历每个元素，就需要用 valueOf(len) 获得 Integer 类型的 Vector 长度，然后用 Integer 变量作为 for 循环变量即可，typedefs要实现这个似乎还得添加更多的宏定义变量
+
+Are there any disadvantages to making the interfaces and modules polymorphic?
+
+多态模块是无法添加 (* synthesize *) 作为独立可综合模块的，因为它本身并没有确定下内部的数据结构，无法独立地生成 Verilog （Verilog 可没有多态的概念）。
+但这不代表多态模块不可综合，当它被其它模块调用时，其数据类型等信息被确定下来后，照样可以作为调用者模块的一部分而生成 Verilog 。
+
+写多态的时候是比较麻烦的，需要对各个部分都都写上provisos
+
+4. Now that your FFT can be fully separated from the AudioPipeline, it makes sense to test the FFT modules independently. 
+
+Describe in detail (two or three paragraphs is appropriate) how you can test your FFT implementations independently from the rest of the AudioPipeline. 
+
+可以借助matlab生成一些数据（FFT前，FFT后），然后新建一个tb (todo)
+
+Are your FFT implementations correct for both larger and smaller number of points than 8? 
+
+Is it any easier to test the FFT implementations because they are polymorphic?
+
+6.375_Lab2
+
+主要就是实现FFT，有6.175Lab2的实现，可以较为简单的理解代码，并加入寄存器实现相应结构的FFT
+难点还在于实现多态
