@@ -1,0 +1,36 @@
+4 Discussion Questions
+1. Describe your design of the mkPitchAdjust module. How many cycles does it take to do a single round of pitch adjustment in your design?
+
+    几乎完全复刻C语言实现的代码，每个周期计算一个outphases，总共nbins个周期
+    每次计算前需要FIFO中送入数据，并且当前模块中的done为高电平
+    inphases和outphases在C语言中是static，需要每次迭代，因此需要用reg
+    分清楚那些变量是组合算出来的，哪些是下个周期乃至下次计算还要用的
+
+2. Describe your design of the ToMP and FromMP modules. How many cycles does it take to convert a Vector of N Complex numbers to a Vector of N ComplexMP numbers assuming it takes K cycles to convert a single number?
+
+    仅转换的周期数只需要一个周期，module本身也可以作为vector，相当于展开例化多个模块
+
+3. What portion of your time in this lab was spent initially implementing the mkPitchAdjust module and completing the pipeline, and what portion of your time was spent designing and implementing tests and debugging the pipeline?
+
+    mkPitchAdjust,5H 一开始专注于C语言中的整个算法以及整个算法和数据的计算和验证流程，后来发现只需实现PitchAdjust的部分，直接根据C语言翻译过来
+
+    pipeline,3H 相对更简单一点，理解interface和put get方法这些
+
+
+4. Report the synthesis result (i.e., area and critical path) of your mkAudioPipeline module. The report also shows you where the critical path starts and ends. Can you figure out which module accounts for the critical path?
+
+    没做综合
+
+6.375_Lab3
+
+根据ref里的C语言算法原型硬件实现(要是用python写的就好了)
+cd ref
+sudo apt-get install libfftw3-dev
+make all
+./pitch mitrib.pcm out_ref.pcm
+这俩应当一样?(C语言是浮点数算的，并非完全一致)
+cmp out_ref.pcm ../data/mitrib_pa8_2_2.pcm
+
+ffmpeg -f s16le -ar 44100 -i mitrib.pcm mitrib.wav
+
+几乎完全复刻C语言实现的代码，每个周期计算一个outphases，总共nbins个周期

@@ -1,0 +1,28 @@
+bscflags = -keep-fires -aggressive-conditions
+bsvdir = ../common:../fir:../fft
+build_dir = bscdir
+synth_dir = /tmp/6375-lab3-${USER}
+
+src = PitchAdjust.bsv PitchAdjustTest.bsv $(wildcard ../common/*.bsv) $(wildcard ../fft/*.bsv) $(wildcard ../fir/*.bsv)
+
+
+PitchAdjust: PitchAdjust.bsv PitchAdjustTest.bsv
+	mkdir -p bscdir
+	bsc -u -sim -simdir $(build_dir) -bdir $(build_dir) -info-dir $(build_dir) $(bscflags) -p +:$(bsvdir) -g mkPitchAdjustTest PitchAdjustTest.bsv
+	bsc -e mkPitchAdjustTest -sim -o PitchAdjust.exe -simdir $(build_dir) -bdir $(build_dir) -info-dir $(build_dir) $(bscflags)
+
+AudioPipeline: $(src)
+	mkdir -p bscdir
+	bsc -u -sim -simdir $(build_dir) -bdir $(build_dir) -info-dir $(build_dir) $(bscflags) -p +:$(bsvdir) -g mkTestDriver ../common/TestDriver.bsv
+	bsc -e mkTestDriver -sim -o AudioPipeline.exe -simdir $(build_dir) -bdir $(build_dir) -info-dir $(build_dir) $(bscflags)
+
+simulation:
+	./AudioPipeline.exe
+	cmp out.pcm ../data/mitrib_pa8_2_2.pcm
+
+synthAudioPipeline: $(src)
+	mkdir -p $(synth_dir)
+	synth ../common/AudioPipeline.bsv mkAudioPipeline -p $(bsvdir) -s $(synth_dir) -l multisize
+
+clean:
+	rm -rf bscdir PitchAdjust.exe AudioPipeline.exe *.so

@@ -2,3 +2,10 @@
 /*/logs
 /*/bluesim
 /*/programs/build
+/*/audio/fir/bscdir
+/*/audio/fft/bscdir
+/*/audio/pitch/bscdir
+/*/audio/data
+*.pcm
+*.so
+*.exe
