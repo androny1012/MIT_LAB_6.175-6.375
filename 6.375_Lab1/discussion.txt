@@ -1,0 +1,31 @@
+cmp out.pcm ../data/mitrib_short_filtered.pcm
+
+
+5 Discussion Questions
+1. In section 4.3 we asked you to compare the hardware generated for the FIR filter before using for-loops, and then again after. How does using for-loops in the Bluespec source code change the hardware the compiler generates for the FIR filter? How has the area and critical-path delay of your hardware change by using for-loops in Bluespec?
+
+使用for-loops不会影响生成的verilog代码，只是变量名有些不同，自然也不会影响area and critical-path delay
+
+2. How many lines of code would you have to change in the original filter description without a for-loop and vectors if we wanted to turn it into a 16 tap FIR filter? How many lines of code have to change in the version with the for-loop? A 256 tap FIR filter? Comment on how for-loops can be used to write source code which is more generic and easily reusable in different situations.
+
+目前还没写成参数化，参数化后只需要改一行即可，当然FIR权重对应的也得全改，这个如果采用读文件的方式的话，就不需要改
+Bluespec对于多态有很好的支持，所以使用for-loops和相关的多态特性，能够使用通用可重用的代码。
+只需修改相关的规模参数，就可以快速实现修改硬件规模，for-loops对于verilog/SV都是一样的，但相应的位宽，接口数目，数据类型，在修改时还是前者更为方便快捷。
+
+3. After switching your filter to use the multistage multiplier in place of the Verilog * operator, the builders of the multiplier discover an enhancement they can make to their implementation of the multiplier. How does your implementation of the filter have to change to accommodate the new implementation of the multiplier assuming the multiplier interface stays the same?
+
+multiplier中是用FIFO作为接口，mul_step在乘法器没算完的时候是无法fire，无法送进去数，acc_out在乘法没算完前是无法fire，取不出数
+
+4. After you successfully changed FIR filter using multi-stage multipliers, how do the area and critical path delay compare with results from unstatic and statically elaborated Bluespec code in sections 4.2 and 4.3?
+
+没做综合
+
+6.375_Lab1
+
+首先需要对整个音频的通路和测试框架有一个概念
+
+common/AudioProcessorTypes 数据接口 16bit有符号数
+common/TestDriver          读文件 利用接口送入电路进行仿真
+
+引入音频的实例对算法进行验证，根据文档跑通实验，学会FIFO的使用和for-loops实现参数化
+
